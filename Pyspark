@@ -589,3 +589,924 @@ df.show()        # display data
 df.columns       # column names
 df.printSchema() # structure
 df.describe()    # statistics
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ✅ 1. `select()`
+
+### 👉 Purpose:
+
+Used to **select specific columns** from a DataFrame (like SQL `SELECT`).
+
+### ✅ Syntax:
+
+```python
+df.select("col1", "col2")
+```
+
+### ✅ Example:
+
+```python
+df.select("name", "age").show()
+```
+
+### ✅ Output:
+
+Only `name` and `age` columns will be displayed.
+
+### ✅ You can also do operations:
+
+```python
+from pyspark.sql.functions import col
+
+df.select(col("name"), (col("salary") * 2).alias("double_salary")).show()
+```
+
+✅ **Key Points:**
+
+* Used to filter columns
+* Can perform calculations
+* Can rename using `.alias()`
+
+***
+
+# ✅ 2. `withColumn()`
+
+### 👉 Purpose:
+
+Used to **add a new column** or **modify an existing column**.
+also use to change the datatype of that coloumb
+
+### ✅ Syntax:
+
+```python
+df.withColumn("new_column", expression)
+```
+
+### ✅ Example (Add column):
+
+```python
+from pyspark.sql.functions import col
+
+df = df.withColumn("bonus", col("salary") * 0.1)
+```
+
+### ✅ Example (Modify column):
+
+```python
+df = df.withColumn("salary", col("salary") + 1000)
+```
+
+✅ **Key Points:**
+
+* Adds new column OR modifies existing
+* Requires transformation logic
+* Returns a new DataFrame (original is unchanged)
+
+***
+
+# ✅ 3. `withColumnRenamed()`
+
+### 👉 Purpose:
+
+Used to **rename a column**
+
+### ✅ Syntax:
+
+```python
+df.withColumnRenamed("old_name", "new_name")
+```
+
+### ✅ Example:
+
+```python
+df = df.withColumnRenamed("name", "employee_name")
+```
+
+✅ **Key Points:**
+
+* Only renames column (no calculation)
+* Simple and direct
+
+***
+
+# 🔥 Quick Comparison
+
+| Function              | Purpose                 |
+| --------------------- | ----------------------- |
+| `select()`            | Select specific columns |
+| `withColumn()`        | Add or modify columns   |
+| `withColumnRenamed()` | Rename column           |
+
+***
+# ✅ Combined Example:
+```python
+df = df.select("name", "salary") \
+       .withColumn("bonus", col("salary") * 0.1) \
+       .withColumnRenamed("name", "employee_name")
+df.show()
+```
+***
+# ✅ Simple Real-Life Understanding:
+
+* `select()` → "I only want these columns"
+* `withColumn()` → "Add/change this column"
+* `withColumnRenamed()` → "Change this column name"
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ✅ 1. `filter()` (or `where()`)
+
+### 👉 Purpose:
+
+Used to **filter rows based on a condition** (like SQL `WHERE`).
+
+### ✅ Syntax:
+
+```python
+df.filter(condition)
+# OR
+df.where(condition)
+```
+
+### ✅ Example:
+
+```python
+from pyspark.sql.functions import col
+
+df.filter(col("age") > 25).show()
+```
+
+### ✅ SQL style:
+
+```python
+df.filter("age > 25").show()
+```
+
+✅ **Key Points:**
+
+* Filters rows
+* Same as `where()`
+* Can use multiple conditions:
+```python
+df.filter((col("age") > 25) & (col("salary") > 30000)).show()
+```
+***
+
+# ✅ 2. `distinct()`
+
+### 👉 Purpose:
+
+Used to **remove duplicate rows from the entire DataFrame**
+
+### ✅ Syntax:
+
+```python
+df.distinct()
+```
+
+### ✅ Example:
+
+```python
+df.select("name").distinct().show()
+```
+
+✅ **Key Points:**
+
+* Removes duplicates across **all selected columns**
+* Works on entire row (not specific columns)
+
+***
+
+# ✅ 3. `dropDuplicates()`
+
+### 👉 Purpose:
+
+Used to **remove duplicate rows**, optionally based on **specific columns**
+
+### ✅ Syntax:
+
+```python
+df.dropDuplicates()
+df.dropDuplicates(["col1", "col2"])
+```
+
+### ✅ Example 1 (All columns):
+
+```python
+df.dropDuplicates().show()
+```
+
+### ✅ Example 2 (Specific columns):
+
+```python
+df.dropDuplicates(["name"]).show()
+```
+
+✅ **Key Points:**
+
+* More flexible than `distinct()`
+* You can specify columns
+* Keeps first occurrence, removes rest
+
+***
+
+# 🔥 Difference Between `distinct()` and `dropDuplicates()`
+
+| Feature     | distinct()             | dropDuplicates()                |
+| ----------- | ---------------------- | ------------------------------- |
+| Scope       | Entire row             | Entire or specific columns      |
+| Flexibility | Less                   | More                            |
+| Use case    | Remove full duplicates | Remove based on certain columns |
+
+***
+
+# ✅ Combined Example:
+
+```python
+from pyspark.sql.functions import col
+
+# Filter rows
+df_filtered = df.filter(col("age") > 25)
+
+# Remove duplicates
+df_unique = df_filtered.dropDuplicates(["name"])
+df_unique.show()
+```
+***
+# ✅ Simple Understanding:
+
+* `filter()` → "Show only matching rows"
+* `distinct()` → "Remove complete duplicate rows"
+* `dropDuplicates()` → "Remove duplicates based on selected columns"
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ✅ 1. `sort()` / `orderBy()`
+
+👉 **Purpose:**  
+Both are used to **sort the DataFrame** (same functionality).
+
+✅ **Difference:**
+
+* `sort()` = alias of `orderBy()`
+* No major difference ✅
+
+***
+
+## ✅ Syntax:
+
+```python
+df.sort("column")
+df.orderBy("column")
+```
+
+***
+
+## ✅ Example:
+
+```python
+df.sort("age").show()   # ascending by default
+```
+
+***
+
+## ✅ Descending order:
+
+```python
+from pyspark.sql.functions import col
+
+df.orderBy(col("age").desc()).show()
+```
+
+***
+
+## ✅ Multiple columns:
+
+```python
+df.orderBy("age", "salary").show()
+```
+
+***
+
+✅ **Key Points:**
+
+* Default sorting → **Ascending**
+* Use `.desc()` for descending
+* Can sort by multiple columns
+
+***
+
+# ✅ 2. `groupBy()`
+
+👉 **Purpose:**  
+Used to **group data based on columns and perform aggregations** (like SQL `GROUP BY`)
+
+***
+
+## ✅ Syntax:
+
+```python
+df.groupBy("column")
+```
+
+***
+
+## ✅ Example:
+
+```python
+df.groupBy("department").count().show()
+```
+
+👉 Counts employees per department
+
+***
+
+## ✅ With Aggregations:
+
+```python
+from pyspark.sql.functions import sum, avg, max
+
+df.groupBy("department").agg(
+    sum("salary").alias("total_salary"),
+    avg("salary").alias("avg_salary"),
+    max("salary").alias("max_salary")
+).show()
+```
+
+***
+
+✅ **Key Points:**
+
+* Must use aggregation functions (`count`, `sum`, `avg`, etc.)
+* Returns grouped data
+* Very important for data analysis
+
+***
+
+# 🔥 Combined Example:
+
+```python
+from pyspark.sql.functions import col, avg
+
+df.groupBy("department") \
+  .agg(avg("salary").alias("avg_salary")) \
+  .orderBy(col("avg_salary").desc()) \
+  .show()
+```
+
+👉 Group → Aggregate → Sort
+
+***
+
+# ✅ Quick Difference:
+
+| Function               | Purpose                    |
+| ---------------------- | -------------------------- |
+| `sort()` / `orderBy()` | Sort rows                  |
+| `groupBy()`            | Group data for aggregation |
+
+***
+
+# ✅ Simple Understanding:
+
+* `sort()` → "Arrange the rows"
+* `orderBy()` → "Arrange the rows" (same as sort)
+* `groupBy()` → "Group rows and calculate values"
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ✅ 1. What is `join()`?
+
+👉 Used to **merge data from two DataFrames**
+
+***
+
+## ✅ Syntax:
+
+```python
+df1.join(df2, on="column", how="type")
+```
+
+* `on` → common column
+* `how` → type of join
+
+***
+
+# ✅ 2. Types of Joins in PySpark
+
+***
+
+## 🔹 1. Inner Join (Default)
+
+👉 Returns **only matching rows** from both tables
+
+```python
+df1.join(df2, on="id", how="inner").show()
+```
+
+✅ Only common records are kept
+
+***
+
+## 🔹 2. Left Join (Left Outer Join)
+
+👉 Returns **all rows from left + matching from right**
+
+```python
+df1.join(df2, on="id", how="left").show()
+```
+
+✅ Non-matching right values → NULL
+
+***
+
+## 🔹 3. Right Join (Right Outer Join)
+
+👉 Returns **all rows from right + matching from left**
+
+```python
+df1.join(df2, on="id", how="right").show()
+```
+
+***
+
+## 🔹 4. Full Outer Join
+
+👉 Returns **all rows from both tables**
+
+```python
+df1.join(df2, on="id", how="outer").show()
+```
+
+✅ Missing values → NULL
+
+***
+
+## 🔹 5. Left Semi Join
+
+👉 Returns only rows from left DataFrame **if match exists in right**
+
+```python
+df1.join(df2, on="id", how="left_semi").show()
+```
+
+✅ Only columns from left table
+
+***
+
+## 🔹 6. Left Anti Join
+
+👉 Returns rows from left where **no match exists in right**
+
+```python
+df1.join(df2, on="id", how="left_anti").show()
+```
+
+***
+
+# ✅ 3. Example
+
+```python
+df1.show()
+# id | name
+# 1  | Asad
+# 2  | Ali
+# 3  | John
+
+df2.show()
+# id | salary
+# 1  | 1000
+# 2  | 2000
+# 4  | 3000
+```
+
+***
+
+## 👉 Inner Join:
+
+```python
+df1.join(df2, "id").show()
+```
+
+✅ Output:
+
+```
+1 Asad 1000
+2 Ali  2000
+```
+
+***
+
+## 👉 Left Join:
+
+```python
+df1.join(df2, "id", "left").show()
+```
+
+✅ Output:
+
+```
+1 Asad 1000
+2 Ali  2000
+3 John NULL
+```
+
+***
+
+# ✅ 4. Join on Different Column Names
+
+```python
+df1.join(df2, df1.id == df2.emp_id, "inner").show()
+```
+
+***
+
+# ✅ 5. Multiple Conditions
+
+```python
+df1.join(df2, (df1.id == df2.id) & (df1.name == df2.name), "inner").show()
+```
+
+***
+
+# ✅ 6. Handling Duplicate Columns
+
+```python
+df1.join(df2, "id").select(df1["id"], df1["name"], df2["salary"]).show()
+```
+
+***
+
+# 🔥 Quick Summary
+
+| Join Type | Description                      |
+| --------- | -------------------------------- |
+| Inner     | Only matching rows               |
+| Left      | All left + matched right         |
+| Right     | All right + matched left         |
+| Outer     | All rows from both               |
+| Left Semi | Only matching rows from left     |
+| Left Anti | Only non-matching rows from left |
+
+* Default join = **Inner join**
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+What is createDataFrame()?
+👉 It converts Python data → PySpark DataFrame
+
+#Syntex
+spark.createDataFrame(data, schema)
+
+# EX :->
+data = [("Asad", 23), ("Ali", 25), ("John", 30)]
+columns = ["name", "age"]
+df = spark.createDataFrame(data, columns)
+df.show()
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ✅ 1. `union()`
+
+👉 Used to **combine two DataFrames (row-wise)**
+
+## ✅ Syntax:
+
+```python
+df1.union(df2)
+```
+
+## ✅ Example:
+
+```python
+data1 = [("Asad", 23), ("Ali", 25)]
+data2 = [("John", 30), ("Sara", 28)]
+
+columns = ["name", "age"]
+
+df1 = spark.createDataFrame(data1, columns)
+df2 = spark.createDataFrame(data2, columns)
+
+df = df1.union(df2)
+df.show()
+```
+
+***
+
+## ✅ Output:
+
+```
++----+---+
+|name|age|
++----+---+
+|Asad| 23|
+|Ali | 25|
+|John| 30|
+|Sara| 28|
++----+---+
+```
+
+***
+
+# ✅ 2. `unionAll()`
+
+👉 **Same as `union()` (in modern Spark)**
+
+```python
+df1.unionAll(df2)
+```
+
+***
+
+# 🔥 Important Difference
+
+| Feature    | union()          | unionAll()                |
+| ---------- | ---------------- | ------------------------- |
+| Behavior   | Combines data    | Same                      |
+| Duplicates | Keeps duplicates | Keeps duplicates          |
+| Status     | ✅ Used           | ⚠️ Deprecated (old Spark) |
+
+***
+
+# ⚠️ Important Point:
+
+* In **older Spark versions**:
+  * `union()` → removes duplicates (like SQL UNION)
+  * `unionAll()` → keeps duplicates
+
+* In **PySpark (latest versions)**:
+  ✅ `union()` = `unionAll()` (both keep duplicates)
+
+***
+
+# ✅ Example with Duplicates:
+
+```python
+data1 = [("Asad", 23)]
+data2 = [("Asad", 23)]
+
+df1 = spark.createDataFrame(data1, columns)
+df2 = spark.createDataFrame(data2, columns)
+
+df = df1.union(df2)
+df.show()
+```
+
+✅ Output:
+
+```
+Asad 23
+Asad 23
+```
+
+👉 Duplicate is **NOT removed**
+
+***
+
+# ✅ How to Remove Duplicates?
+
+```python
+df.distinct().show()
+```
+
+***
+
+# 🔥 Key Rules:
+
+✅ Schema must be same  
+✅ Column order must match  
+✅ Data types must match
+
+***
+
+# ✅ Simple Understanding:
+
+* `union()` → "Append rows from another DataFrame"
+* `unionAll()` → same (but outdated)
+
+***
+
+# ✅ Interview Tip:
+
+👉 Always say:
+
+> "In PySpark, `union()` does NOT remove duplicates. To remove duplicates, we use `distinct()`."
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ✅ 1. `fillna()`
+
+👉 Used to **replace NULL / missing values** in a DataFrame
+
+## ✅ Syntax:
+
+```python
+df.fillna(value)
+df.fillna(value, subset=["column"])
+```
+
+***
+
+## ✅ Example:
+
+```python
+data = [("Asad", 23), ("Ali", None), ("John", None)]
+columns = ["name", "age"]
+
+df = spark.createDataFrame(data, columns)
+
+df.fillna(0).show()
+```
+
+***
+
+## ✅ Output:
+
+```
++----+---+
+|name|age|
++----+---+
+|Asad| 23|
+|Ali |  0|
+|John|  0|
++----+---+
+```
+
+***
+
+## ✅ Fill specific column:
+
+```python
+df.fillna({"age": 0}).show()
+```
+
+***
+
+# ✅ 2. `fill()`
+
+👉 `fill()` is just an **alias (short form)** of `fillna()`
+
+```python
+df.fill(0)
+```
+
+✅ Same as:
+
+```python
+df.fillna(0)
+```
+
+***
+
+# 🔥 Important Notes:
+
+* Works only on **NULL values**
+* Can pass **single value OR dictionary**
+
+***
+
+# ✅ Multiple Columns Example:
+
+```python
+data = [("Asad", None), (None, 25)]
+columns = ["name", "age"]
+
+df = spark.createDataFrame(data, columns)
+
+df.fillna({
+    "name": "Unknown",
+    "age": 0
+}).show()
+```
+
+***
+
+## ✅ Output:
+
+```
++-------+---+
+|name   |age|
++-------+---+
+|Asad   |  0|
+|Unknown| 25|
++-------+---+
+```
+
+***
+
+# ✅ Quick Difference
+
+| Function   | Meaning             |
+| ---------- | ------------------- |
+| `fillna()` | Replace NULL values |
+| `fill()`   | Same as `fillna()`  |
+
+***
+
+# ✅ Simple Understanding:
+
+* `fillna()` → "Replace missing values"
+* `fill()` → "Shortcut of fillna()"
+
+***
+
+# ✅ Interview Tip:
+
+👉 Always say:
+
+> "`fillna()` is used to handle missing/null values in PySpark DataFrames."
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ✅ What are `StructType` and `StructField`?
+
+👉 They are used to **define schema (structure) of a DataFrame manually**
+"StructType is a collection of StructField objects that defines the schema of a DataFrame."
+***
+
+# ✅ 1. `StructType`
+
+👉 Represents the **complete schema (table structure)**  
+👉 It is a **collection of multiple columns**
+
+***
+
+# ✅ 2. `StructField`
+
+👉 Represents **one column** inside schema
+
+***
+# ✅ Example (Simple)
+
+```python
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+
+# Data
+data = [("Asad", 23), ("Ali", 25)]
+
+# Schema
+schema = StructType([
+    StructField("name", StringType(), True),
+    StructField("age", IntegerType(), True)
+])
+
+# Create DataFrame
+df = spark.createDataFrame(data, schema)
+
+df.show()
+df.printSchema()
+```
+
+***
+
+# ✅ Output:
+
+```
++----+---+
+|name|age|
++----+---+
+|Asad| 23|
+|Ali | 25|
++----+---+
+```
+
+### Schema:
+
+```
+root
+ |-- name: string (nullable = true)
+ |-- age: integer (nullable = true)
+```
+
+***
+
+# ✅ Explanation
+
+### 🔹 `StructType`
+
+```python
+StructType([...])
+```
+
+👉 Defines the **full structure**
+
+***
+
+### 🔹 `StructField("name", StringType(), True)`
+
+👉 Means:
+
+* `"name"` → column name
+* `StringType()` → datatype
+* `True` → allows NULL values
+
+***
+
+# 🔥 Important Points:
+
+* `StructType` = full schema
+* `StructField` = individual column
+* Ensures **correct data types**
+* Avoids Spark guessing wrong types
+
+***
+
+# ✅ Simple Understanding:
+
+* `StructType` → "Table structure"
+* `StructField` → "Each column"
+
+***
+
+# ✅ Interview Tip:
+
+👉 Always say:
+
+> "StructType is a collection of StructField objects that defines the schema of a DataFrame."
+
