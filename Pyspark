@@ -49,13 +49,19 @@ PySpark is used when:
 
 ### 1. SparkSession
 
-Entry point to use PySpark
+-> SparkSession is the unified entry point in PySpark used to create DataFrames, read/write data, execute SQL queries, and manage Spark applications.
+-> Entry point to use PySpark
 
 ```python
 from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.appName("Example").getOrCreate()
 ```
+✅ Explanation:
+
+builder → used to configure Spark
+appName() → name of your application
+getOrCreate() → creates new or reuses existing session
 
 ***
 
