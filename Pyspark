@@ -1509,4 +1509,479 @@ StructType([...])
 👉 Always say:
 
 > "StructType is a collection of StructField objects that defines the schema of a DataFrame."
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ✅ 1. `createOrReplaceTempView` in PySpark
+
+### 🔹 What it does
+
+`createOrReplaceTempView()` is used to:
+
+* Convert a **DataFrame into a SQL temporary view**
+* Run **SQL queries** on DataFrame using `spark.sql()`
+
+👉 It is **session-scoped** (only available until Spark session ends)
+
+***
+
+### 🔹 Syntax
+
+```python
+df.createOrReplaceTempView("view_name")
+```
+
+***
+
+### 🔹 Example
+
+```python
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName("Example").getOrCreate()
+
+data = [("Asad", 25), ("Ali", 30), ("John", 28)]
+columns = ["Name", "Age"]
+
+df = spark.createDataFrame(data, columns)
+
+# Create temp view
+df.createOrReplaceTempView("people")
+
+# Run SQL query
+result = spark.sql("SELECT Name, Age FROM people WHERE Age > 25")
+result.show()
+```
+
+***
+
+### 🔹 Key Points
+
+* Replaces view if it already exists
+* Works like a **temporary table**
+* Only accessible within the same Spark session
+* For **global view**, use:
+
+```python
+df.createOrReplaceGlobalTempView("view_name")
+```
+
+***
+
+# ✅ 2. Window Functions in PySpark
+
+### 🔹 What are Window Functions?
+
+Window functions perform calculations:
+
+* Across a **group of rows**
+* Without collapsing rows (like `groupBy` does)
+
+👉 Think: "Apply aggregation but still keep all rows"
+
+***
+
+### 🔹 Common Window Functions
+
+* `row_number()`
+* `rank()`
+* `dense_rank()`
+* `lag()`, `lead()`
+* `sum()`, `avg()` with window
+
+***
+
+### 🔹 Syntax
+
+```python
+from pyspark.sql.window import Window
+from pyspark.sql.functions import *
+
+windowSpec = Window.partitionBy("column").orderBy("column")
+```
+
+***
+
+### 🔹 Example Dataset
+
+```python
+data = [
+    ("A", "HR", 3000),
+    ("B", "HR", 4000),
+    ("C", "IT", 5000),
+    ("D", "IT", 6000),
+    ("E", "HR", 3500)
+]
+
+columns = ["Name", "Department", "Salary"]
+
+df = spark.createDataFrame(data, columns)
+```
+
+***
+
+# ✅ Example 1: `row_number()`
+
+```python
+from pyspark.sql.functions import row_number
+
+windowSpec = Window.partitionBy("Department").orderBy("Salary")
+
+df.withColumn("Row_Num", row_number().over(windowSpec)).show()
+```
+
+👉 Gives row number within each department
+
+***
+
+# ✅ Example 2: `rank()` vs `dense_rank()`
+
+```python
+from pyspark.sql.functions import rank, dense_rank
+
+df.withColumn("Rank", rank().over(windowSpec)) \
+  .withColumn("Dense_Rank", dense_rank().over(windowSpec)) \
+  .show()
+```
+
+👉 Difference:
+
+* `rank()` → skips numbers on ties
+* `dense_rank()` → no gaps
+
+***
+
+# ✅ Example 3: `lag()` and `lead()`
+
+```python
+from pyspark.sql.functions import lag, lead
+
+df.withColumn("Previous_Salary", lag("Salary", 1).over(windowSpec)) \
+  .withColumn("Next_Salary", lead("Salary", 1).over(windowSpec)) \
+  .show()
+```
+
+***
+
+# ✅ Example 4: Aggregation with Window
+
+```python
+from pyspark.sql.functions import sum
+
+windowSpec = Window.partitionBy("Department")
+
+df.withColumn("Total_Salary", sum("Salary").over(windowSpec)).show()
+```
+
+👉 Same total salary shown for each row in department
+
+***
+
+# ✅ Difference: `groupBy` vs Window
+
+| Feature           | groupBy | Window    |
+| ----------------- | ------- | --------- |
+| Output rows       | Reduced | Same      |
+| Aggregation       | Yes     | Yes       |
+| Row-level details | Lost    | Preserved |
+
+***
+
+# ✅ Real-time Use Cases
+
+* Ranking employees by salary
+* Finding previous/next records
+* Running totals
+* Deduplication using `row_number()`
+* Top-N per group
+
+***
+
+# ✅ Interview Tip (Important 🚀)
+
+👉 Very common question:
+**“Find highest salary employee per department”**
+
+```python
+from pyspark.sql.functions import row_number
+from pyspark.sql.window import Window
+
+windowSpec = Window.partitionBy("Department").orderBy(df["Salary"].desc())
+
+result = df.withColumn("rn", row_number().over(windowSpec)) \
+           .filter("rn = 1") \
+           .drop("rn")
+
+result.show()
+```
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ✅ What is `explode()` in PySpark?
+
+### 🔹 Definition
+
+`explode()` is used to:
+
+* **Flatten array or map columns**
+* Convert each element into a **separate row**
+
+👉 It is mainly used when working with **nested data (JSON, arrays, lists)**
+
+***
+
+# ✅ Syntax
+
+```python
+from pyspark.sql.functions import explode
+
+df.select(explode("column_name"))
+```
+
+***
+
+# ✅ Example 1: Explode Array Column
+
+### 🔹 Input Data
+
+```python
+data = [
+    ("Asad", ["Python", "Azure", "SQL"]),
+    ("Ali", ["Java", "AWS"]),
+]
+
+columns = ["Name", "Skills"]
+
+df = spark.createDataFrame(data, columns)
+df.show(truncate=False)
+```
+
+### 🔹 Output (Before explode)
+
+```
++-----+-------------------------+
+|Name |Skills                   |
++-----+-------------------------+
+|Asad |[Python, Azure, SQL]     |
+|Ali  |[Java, AWS]              |
++-----+-------------------------+
+```
+
+***
+
+### 🔹 Apply `explode()`
+
+```python
+from pyspark.sql.functions import explode
+
+df_exploded = df.select("Name", explode("Skills").alias("Skill"))
+df_exploded.show()
+```
+
+***
+
+### 🔹 Output
+
+```
++-----+--------+
+|Name |Skill   |
++-----+--------+
+|Asad |Python  |
+|Asad |Azure   |
+|Asad |SQL     |
+|Ali  |Java    |
+|Ali  |AWS     |
++-----+--------+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ✅ 1. `cache()` in PySpark
+
+### 🔹 What it does
+
+* Stores DataFrame/RDD in **memory (RAM)** for faster reuse
+* Avoids recomputation of transformations
+
+***
+
+### 🔹 Syntax
+
+```python
+df.cache()
+```
+
+***
+
+### 🔹 Example
+
+```python
+df = spark.read.csv("data.csv", header=True)
+
+df.cache()
+
+df.count()     # Triggers execution & caching
+df.show()      # Uses cached data (faster)
+```
+
+***
+
+### 🔹 Key Points
+
+* Equivalent to:
+
+```python
+df.persist(StorageLevel.MEMORY_ONLY)
+```
+
+* Stores only in **RAM**
+* If memory is full → recomputation happens
+
+***
+
+# ✅ 2. `persist()` in PySpark
+
+### 🔹 What it does
+
+* More flexible version of caching
+* Allows storing data in:
+  * Memory
+  * Disk
+  * Memory + Disk
+  * Serialized format
+
+***
+
+### 🔹 Syntax
+
+```python
+from pyspark import StorageLevel
+
+df.persist(StorageLevel.MEMORY_AND_DISK)
+```
+
+***
+
+### 🔹 Example
+
+```python
+from pyspark import StorageLevel
+
+df = spark.read.json("data.json")
+
+df.persist(StorageLevel.MEMORY_AND_DISK)
+
+df.count()   # triggers caching
+df.show()    # reused data
+```
+
+***
+
+# ✅ Storage Levels in `persist()`
+
+| Storage Level          | Description                      |
+| ---------------------- | -------------------------------- |
+| MEMORY\_ONLY           | Store in RAM (same as cache)     |
+| MEMORY\_AND\_DISK      | If RAM full → spill to disk      |
+| DISK\_ONLY             | Store only on disk               |
+| MEMORY\_ONLY\_SER      | Serialized (less memory, slower) |
+| MEMORY\_AND\_DISK\_SER | Serialized + spill to disk       |
+
+***
+
+# ✅ Key Difference: `cache()` vs `persist()`
+
+| Feature         | cache()           | persist()        |
+| --------------- | ----------------- | ---------------- |
+| Flexibility     | Fixed             | Custom storage   |
+| Default storage | MEMORY\_ONLY      | User-defined     |
+| Ease of use     | Simple            | Advanced control |
+| Use case        | Small/medium data | Large datasets   |
+
+***
+
+# ✅ When to Use What
+
+### ✅ Use `cache()`
+
+* Data fits in memory
+* Reused multiple times
+* Simple pipelines
+
+***
+
+### ✅ Use `persist()`
+
+* Data is **large**
+* Memory may not be enough
+* Want fault tolerance (disk backup)
+
+***
+
+# ✅ Important Concept: Lazy Evaluation
+
+👉 Both `cache()` and `persist()` are **lazy**
+
+* They don't execute immediately
+* They work **only after an action**
+
+```python
+df.cache()
+# No execution yet
+
+df.count()   # triggers caching
+```
+
+***
+
+# ✅ Removing Cache (Important 🔥)
+
+```python
+df.unpersist()
+```
+
+👉 Frees memory when no longer needed
+
+***
+
+# ✅ Real-world Example
+
+```python
+df = spark.read.parquet("sales_data")
+
+# Heavy transformation
+df_filtered = df.filter(df["amount"] > 1000)
+
+df_filtered.cache()
+
+# Multiple actions
+df_filtered.count()
+df_filtered.groupBy("region").sum().show()
+df_filtered.select("customer").distinct().show()
+```
+
+👉 Without cache → Spark recomputes filter every time  
+👉 With cache → faster execution ✅
+
+***
+
+# ✅ Interview Tips 🚀
+
+👉 Very common question:
+
+### ❓ What happens if memory is full in `cache()`?
+
+👉 Data is recomputed (no disk fallback)
+
+***
+
+### ❓ Why use `persist(MEMORY_AND_DISK)`?
+
+👉 Prevent recomputation when memory is insufficient
+
+***
+
+### ❓ When should you avoid caching?
+
+👉 When:
+
+* Data used only once
+* Small transformations
+* Memory is limited
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
